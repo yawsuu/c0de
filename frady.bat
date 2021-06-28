@@ -61,7 +61,7 @@ goto :EOF
 :checkAgentFile
 SET ret=
 SET devicestate=Offline
-FOR /F "delims=" %%i in ('adb shell su -c "ls /data/local/tmp/frida-server"') do SET ret=%%i
+FOR /F "delims=" %%i in ('adb shell su -c "'ls /data/local/tmp/frida-server'"') do SET ret=%%i
 if "%ret%" equ "%defaultagentpath%" (ECHO. [^-] Found Frida Agent file at %ret% & set agent=Yes)
 if "%agent%" equ "No" (ECHO. [^-] Not found Frida Agent installed at %defaultagentpath:frida-server=%^ & goto :getAgent)
 goto :runFridaSrv
