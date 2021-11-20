@@ -9,7 +9,7 @@ REM - Download Frida server in exact version if it is already downloaded
 REM - Setting-up Frida server in mobile device and run in background
 
 ::Global
-SET version=Beta 0.1a
+SET version=Beta 0.2
 SET devicemodel=Unknown
 SET androidversion=Unknown
 SET rooted=Unknown
@@ -61,7 +61,7 @@ goto :EOF
 :checkAgentFile
 SET ret=
 SET devicestate=Offline
-FOR /F "delims=" %%i in ('adb shell su -c "'ls /data/local/tmp/frida-server'"') do SET ret=%%i
+FOR /F "delims=" %%i in ('adb shell su 0 "ls /data/local/tmp/frida-server"') do SET ret=%%i
 if "%ret%" equ "%defaultagentpath%" (ECHO. [^-] Found Frida Agent file at %ret% & set agent=Yes)
 if "%agent%" equ "No" (ECHO. [^-] Not found Frida Agent installed at %defaultagentpath:frida-server=%^ & goto :getAgent)
 goto :runFridaSrv
@@ -83,14 +83,14 @@ goto :installAgent
 :installAgent
 ECHO. [^-] Installing Frida Server Agent to Device ...
 adb push %fridafile:.xz=% /data/local/tmp/frida-server > nul 2>&1
-adb shell su -c "chmod 775 /data/local/tmp/frida-server"
+adb shell su 0 "chmod 775 /data/local/tmp/frida-server"
 goto :runFridaSrv
 
 :runFridaSrv
 ECHO. [+] Executing Frida Server Agent ...
 ECHO. [^!] Check frida-ps -aU in another terminal^!
 ::adb shell su -c "/data/local/tmp/frida-server &"
-adb shell su -c "/data/local/tmp/frida-server"
+adb shell su 0 "/data/local/tmp/frida-server"
 ECHO. [+] Check Frida
 frida-ps -aU
 goto :EOF
@@ -103,12 +103,17 @@ if "%ret%" neq "" set devicestate=Online
 if "%devicestate%" equ "Online" goto :getDeviceInfo_ADB
 goto :EOF
 
+:setRoot
+for /f "tokens=* delims=" %%i in ('adb root') do set ret=%%i
+timeout /t 10 /nobreak
+goto :getDeviceInfo_ADB
+
 :getDeviceInfo_ADB
 set ret=
 set rooted=No
 for /f "tokens=* delims=" %%i in ('adb shell "getprop ro.product.model"') do set devicemodel=%%i
 for /f "tokens=* delims=" %%i in ('adb shell "getprop ro.build.version.release"') do set androidversion=%%i
 for /f "tokens=* delims=" %%i in ('adb shell "getprop ro.product.cpu.abi"') do set cpuarch=%%i
-for /f "tokens=* delims=" %%i in ('adb shell "su -c \"echo Root Checker\""') do set ret=%%i
-if "%ret%" equ "Root Checker" set rooted=Yes
+for /f "tokens=* delims=" %%i in ('adb shell su 0 "echo Root Checker"') do set ret=%%i
+if "%ret%" equ "Root Checker" (set rooted=Yes) else (goto :setRoot)
 goto :EOF
